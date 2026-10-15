@@ -13,9 +13,7 @@ void main()async {
   final localeProvider = await LocaleProvider.create();
   runApp(MultiProvider(
       providers: [
-      //  ChangeNotifierProvider(create: (context)=>UserProvider()),
         ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
-    //    ChangeNotifierProvider<HomeViewModel>(create: (context)=>HomeViewModel()),
 
 
       ],

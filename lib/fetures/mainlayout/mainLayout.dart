@@ -1,14 +1,13 @@
 
 import 'package:flutter/material.dart';
-import 'package:mobile_developer_task/fetures/mainlayout/tabs/Customer_Details_Screen/Customer_Details%20_Screen.dart';
-import 'package:mobile_developer_task/fetures/mainlayout/tabs/Customer_List_Screen/CustomerListScreen.dart';
-import 'package:mobile_developer_task/fetures/mainlayout/tabs/Sales/Sales.dart';
+import 'package:mobile_developer_task/fetures/mainlayout/tabs/Coustomers/Customer_List_Screen/CustomerListScreen.dart';
+import 'package:mobile_developer_task/fetures/mainlayout/tabs/Sales/SalesUI.dart';
 
 import '../../core/Coloursmanger/ColorsManger.dart';
 import '../../l10n/app_localizations.dart';
 
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key});
+   MainLayout({super.key});
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
@@ -16,9 +15,8 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   late final List<Widget> _tabs = [
-    const CustomerListScreen(),
-    const CustomerDetailsScreen(customer: CustomerModel()),
-    const Sales(),
+     CustomerListScreen(),
+    Sales(),
   ];
 
   int selectedIndex = 0;
@@ -63,11 +61,14 @@ class _MainLayoutState extends State<MainLayout> {
           icon: const Icon(Icons.monetization_on),
           label: AppLocalizations.of(context)!.sales_orders,
         ),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.settings),
-          label: AppLocalizations.of(context)!.settings,
-        ),
+
       ],
     );
   }
 }
+
+
+
+
+
+

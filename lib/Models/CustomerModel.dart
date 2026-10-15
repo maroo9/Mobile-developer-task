@@ -1,9 +1,9 @@
 
 class CustomerModel {
-  final String id;
+  final int id;
   final String name;
   final String email;
-  late final String phone;
+  String phone;
   final String address;
   final String city;
 
@@ -17,13 +17,24 @@ class CustomerModel {
   });
 
   factory CustomerModel.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    final parsedId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
+
+    String stringValue(dynamic value) {
+      if (value == null || value == false) return '';
+      return value.toString().trim();
+    }
+
     return CustomerModel(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      email: json['email']?.toString() ?? '',
-      phone: json['phone']?.toString() ?? '',
-      address: json['street']?.toString() ?? json['address']?.toString() ?? '',
-      city: json['city']?.toString() ?? '',
+      // 0 is a parsing sentinel only. The list screen rejects it before use.
+      id: parsedId ?? 0,
+      name: stringValue(json['name']),
+      email: stringValue(json['email']),
+      phone: stringValue(json['phone']),
+      address: stringValue(json['street']).isNotEmpty
+          ? stringValue(json['street'])
+          : stringValue(json['address']),
+      city: stringValue(json['city']),
     );
   }
 }

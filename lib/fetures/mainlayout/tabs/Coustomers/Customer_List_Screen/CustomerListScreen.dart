@@ -1,9 +1,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../../Models/CustomerModel.dart';
-import '../../../../services/odooServces/odoo.dart';
-import '../Customer_Details_Screen/Customer_Details _Screen.dart';
+import '../../../../../Models/CustomerModel.dart';
+import '../../../../../services/odooServces/odoo.dart';
+import '../Customer_Details_Screen/CustomerDetailsScreenUI.dart';
 
 class CustomerListScreen extends StatefulWidget {
   const CustomerListScreen({super.key});
@@ -23,6 +23,12 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   bool isLoading = true;
   String? errorMessage;
 
+  String _displayValue(dynamic value, {required String fallback}) {
+    if (value == null || value == false) return fallback;
+    final text = value.toString().trim();
+    return text.isEmpty || text.toLowerCase() == 'false' ? fallback : text;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,9 +42,13 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
       if (!mounted) return;
 
+      final query = searchController.text.trim().toLowerCase();
       setState(() {
         customers = result;
-        filteredCustomers = result;
+        filteredCustomers = result.where((customer) {
+          final name = _displayValue(customer['name'], fallback: '').toLowerCase();
+          return name.contains(query);
+        }).toList();
         isLoading = false;
         errorMessage = null;
       });
@@ -53,16 +63,36 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   }
 
   void searchCustomers() {
+    if (!mounted) return;
     final query = searchController.text.trim().toLowerCase();
 
     setState(() {
       filteredCustomers = customers.where((customer) {
-        final name =
-        (customer['name'] ?? '').toString().toLowerCase();
+        final name = _displayValue(customer['name'], fallback: '').toLowerCase();
 
         return name.contains(query);
       }).toList();
     });
+  }
+
+  Future<void> _openCustomer(Map<String, dynamic> customerData) async {
+    final selectedCustomer = CustomerModel.fromJson(customerData);
+    debugPrint('Selected Odoo customer ID: ${selectedCustomer.id}');
+
+    if (selectedCustomer.id <= 0) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('Cannot open customer: invalid Odoo ID.')),
+        );
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CustomerDetailsScreen(customer: selectedCustomer),
+      ),
+    );
   }
 
   @override
@@ -114,6 +144,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () {
+                      if (!mounted) return;
                       setState(() {
                         isLoading = true;
                         errorMessage = null;
@@ -141,31 +172,22 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                     vertical: 5,
                   ),
                   child: ListTile(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => CustomerDetailsScreen(
-                            customer: CustomerModel.fromJson(customer),
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: () => _openCustomer(customer),
                     leading: const CircleAvatar(
                       child: Icon(Icons.person),
                     ),
                     title: Text(
-                      customer['name']?.toString() ??
-                          'No name',
+                      _displayValue(customer['name'], fallback: 'No name'),
                     ),
                     subtitle: Column(
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Phone: ${customer['phone'] ?? 'Not provided'}',
+                          'Phone: ${_displayValue(customer['phone'], fallback: 'Not provided')}',
                         ),
                         Text(
-                          'City: ${customer['city'] ?? 'Not provided'}',
+                          'City: ${_displayValue(customer['city'], fallback: 'Not provided')}',
                         ),
                       ],
                     ),

@@ -4,8 +4,8 @@ import 'package:flutter/cupertino.dart';
 import '../../fetures/Auth/login/login.dart';
 import '../../fetures/mainlayout/Splashscreen/splashScreen.dart';
 import '../../fetures/mainlayout/mainLayout.dart';
-import '../../fetures/mainlayout/tabs/Customer_List_Screen/CustomerListScreen.dart';
-import '../../fetures/mainlayout/tabs/Sales/Sales.dart';
+import '../../fetures/mainlayout/tabs/Coustomers/Customer_List_Screen/CustomerListScreen.dart';
+import '../../fetures/mainlayout/tabs/Sales/SalesUI.dart';
 
 abstract class RoutesManager {
    static const String splashscreen="/Splashscreen/";
