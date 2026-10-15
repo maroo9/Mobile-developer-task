@@ -35,7 +35,7 @@ class _SplashscreenState extends State<Splashscreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: 200,
+            height: 250,
           ),
           Container(
             width: 200,
