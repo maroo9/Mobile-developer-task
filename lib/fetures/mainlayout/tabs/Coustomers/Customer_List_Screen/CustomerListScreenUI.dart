@@ -2,8 +2,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../Models/CustomerModel.dart';
-import '../../../../../services/odooServces/odoo.dart';
+import '../../../../../core/Di/app_dependencies.dart';
 import '../Customer_Details_Screen/CustomerDetailsScreenUI.dart';
+import 'CustomerListScreenVM.dart';
 
 class CustomerListScreen extends StatefulWidget {
   const CustomerListScreen({super.key});
@@ -14,90 +15,73 @@ class CustomerListScreen extends StatefulWidget {
 }
 
 class _CustomerListScreenState extends State<CustomerListScreen> {
-  List<Map<String, dynamic>> customers = [];
-  List<Map<String, dynamic>> filteredCustomers = [];
+  late final CustomerListViewModel viewModel;
 
   final TextEditingController searchController =
   TextEditingController();
 
-  bool isLoading = true;
-  String? errorMessage;
-
-  String _displayValue(dynamic value, {required String fallback}) {
-    if (value == null || value == false) return fallback;
-    final text = value.toString().trim();
-    return text.isEmpty || text.toLowerCase() == 'false' ? fallback : text;
-  }
-
   @override
   void initState() {
     super.initState();
-    loadCustomers();
-    searchController.addListener(searchCustomers);
+
+    // Dependency -> Repository -> ViewModel
+    viewModel = CustomerListViewModel(
+      AppDependencies.customerRepository,
+    );
+
+    viewModel.addListener(_refresh);
+    viewModel.loadCustomers();
   }
 
-  Future<void> loadCustomers() async {
-    try {
-      final result = await Odoo.getCustomers();
-
-      if (!mounted) return;
-
-      final query = searchController.text.trim().toLowerCase();
-      setState(() {
-        customers = result;
-        filteredCustomers = result.where((customer) {
-          final name = _displayValue(customer['name'], fallback: '').toLowerCase();
-          return name.contains(query);
-        }).toList();
-        isLoading = false;
-        errorMessage = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        isLoading = false;
-        errorMessage = e.toString();
-      });
+  void _refresh() {
+    if (mounted) {
+      setState(() {});
     }
   }
 
-  void searchCustomers() {
-    if (!mounted) return;
-    final query = searchController.text.trim().toLowerCase();
+  String _displayValue(
+      dynamic value, {
+        required String fallback,
+      }) {
+    if (value == null || value == false) return fallback;
 
-    setState(() {
-      filteredCustomers = customers.where((customer) {
-        final name = _displayValue(customer['name'], fallback: '').toLowerCase();
+    final text = value.toString().trim();
 
-        return name.contains(query);
-      }).toList();
-    });
+    return text.isEmpty || text.toLowerCase() == 'false'
+        ? fallback
+        : text;
   }
 
-  Future<void> _openCustomer(Map<String, dynamic> customerData) async {
-    final selectedCustomer = CustomerModel.fromJson(customerData);
-    debugPrint('Selected Odoo customer ID: ${selectedCustomer.id}');
+  Future<void> _openCustomer(
+      Map<String, dynamic> customerData,
+      ) async {
+    final selectedCustomer =
+    CustomerModel.fromJson(customerData);
 
     if (selectedCustomer.id <= 0) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('Cannot open customer: invalid Odoo ID.')),
-        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot open customer: invalid Odoo ID.',
+          ),
+        ),
+      );
       return;
     }
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => CustomerDetailsScreen(customer: selectedCustomer),
+        builder: (_) => CustomerDetailsScreen(
+          customer: selectedCustomer,
+        ),
       ),
     );
   }
 
   @override
   void dispose() {
-    searchController.removeListener(searchCustomers);
+    viewModel.removeListener(_refresh);
+    viewModel.dispose();
     searchController.dispose();
     super.dispose();
   }
@@ -109,7 +93,9 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         title: const Text('Customers'),
         actions: [
           IconButton(
-            onPressed: loadCustomers,
+            onPressed: viewModel.isLoading
+                ? null
+                : viewModel.loadCustomers,
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -120,6 +106,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: searchController,
+              onChanged: viewModel.searchCustomers,
               decoration: InputDecoration(
                 hintText: 'Search customers by name',
                 prefixIcon: const Icon(Icons.search),
@@ -129,55 +116,57 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               ),
             ),
           ),
+
           Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : errorMessage != null
+            child: viewModel.isLoading
+                ? const Center(
+              child: CircularProgressIndicator(),
+            )
+                : viewModel.errorMessage != null
                 ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  const Text(
                     'Failed to load customers',
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: Colors.red),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(
-                    onPressed: () {
-                      if (!mounted) return;
-                      setState(() {
-                        isLoading = true;
-                        errorMessage = null;
-                      });
-                      loadCustomers();
-                    },
+                    onPressed: viewModel.loadCustomers,
                     child: const Text('Retry'),
                   ),
                 ],
               ),
             )
-                : filteredCustomers.isEmpty
+                : viewModel.filteredCustomers.isEmpty
                 ? const Center(
               child: Text('No customers found'),
             )
                 : ListView.builder(
-              itemCount: filteredCustomers.length,
+              itemCount:
+              viewModel.filteredCustomers.length,
               itemBuilder: (context, index) {
                 final customer =
-                filteredCustomers[index];
+                viewModel.filteredCustomers[index];
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(
+                  margin:
+                  const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 5,
                   ),
                   child: ListTile(
-                    onTap: () => _openCustomer(customer),
+                    onTap: () =>
+                        _openCustomer(customer),
                     leading: const CircleAvatar(
                       child: Icon(Icons.person),
                     ),
                     title: Text(
-                      _displayValue(customer['name'], fallback: 'No name'),
+                      _displayValue(
+                        customer['name'],
+                        fallback: 'No name',
+                      ),
                     ),
                     subtitle: Column(
                       crossAxisAlignment:

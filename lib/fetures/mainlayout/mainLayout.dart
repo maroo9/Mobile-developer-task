@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:mobile_developer_task/fetures/mainlayout/tabs/Coustomers/Customer_List_Screen/CustomerListScreen.dart';
+import 'package:mobile_developer_task/fetures/mainlayout/tabs/Coustomers/Customer_List_Screen/CustomerListScreenUI.dart';
 import 'package:mobile_developer_task/fetures/mainlayout/tabs/Sales/SalesUI.dart';
 
 import '../../core/Coloursmanger/ColorsManger.dart';

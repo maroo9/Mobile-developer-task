@@ -33,6 +33,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
+  bloc:
+    dependency: transitive
+    description:
+      name: bloc
+      sha256: e03b235924e4f509c27b5d6b2f949200e0a91149a9818b4f65eeb56662b75413
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.2.1"
   boolean_selector:
     dependency: transitive
     description:
@@ -46,6 +54,14 @@ packages:
     description:
       name: characters
       sha256: f71061c654a3380576a52b451dd5532377954cf9dbd272a78fc8479606670803
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
+  charcode:
+    dependency: transitive
+    description:
+      name: charcode
+      sha256: fb0f1107cac15a5ea6ef0a6ef71a807b9e4267c713bb93e00e92d737cc8dbd8a
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
@@ -185,8 +201,16 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.8.0"
-  dio:
+  dev_build:
     dependency: transitive
+    description:
+      name: dev_build
+      sha256: fda8a54458b2a873a84e0cd1513f4323a1fb0599ed5455245359bc0398bad9ee
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.2+11"
+  dio:
+    dependency: "direct main"
     description:
       name: dio
       sha256: "7d328c4d898a61efc3cd93655a0955858e29a0aa647f0f9e02d59b3bb275e2e8"
@@ -305,11 +329,43 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.12.0"
+  floor:
+    dependency: "direct main"
+    description:
+      name: floor
+      sha256: c1b06023912b5b8e49deb6a9d867863c535ae1a232d991c3582bba3ee8687867
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.0"
+  floor_annotation:
+    dependency: transitive
+    description:
+      name: floor_annotation
+      sha256: a40949580a7ab0eee572686e2d3b1638fd6bd6a753e661d792ab4236b365b23b
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.0"
+  floor_common:
+    dependency: transitive
+    description:
+      name: floor_common
+      sha256: "41c9914862f83a821815e1b1ffd47a1e1ae2130c35ff882ba2d000a67713ba64"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.0"
   flutter:
     dependency: "direct main"
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_bloc:
+    dependency: "direct main"
+    description:
+      name: flutter_bloc
+      sha256: cf51747952201a455a1c840f8171d273be009b932c75093020f9af64f2123e38
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.1.1"
   flutter_launcher_icons:
     dependency: "direct main"
     description:
@@ -421,6 +477,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.0.0"
+  freezed_annotation:
+    dependency: "direct main"
+    description:
+      name: freezed_annotation
+      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.0"
+  get_it:
+    dependency: "direct main"
+    description:
+      name: get_it
+      sha256: "2b5c6b077aad30bba9782178baff6076a2044141f1d5f2f15b43bca3fbe74874"
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.3.0"
+  go_router:
+    dependency: "direct main"
+    description:
+      name: go_router
+      sha256: c92d18e1fe994cb06d48aa786c46b142a5633067e8297cff6b5a3ac742620104
+      url: "https://pub.dev"
+    source: hosted
+    version: "17.0.0"
   google_fonts:
     dependency: "direct main"
     description:
@@ -565,6 +645,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
+  injectable:
+    dependency: "direct main"
+    description:
+      name: injectable
+      sha256: "1da6399509e44ddb0d8a4a35291d7122c4efb5c625a9d733bf5e48d4a72e379e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   intl:
     dependency: "direct main"
     description:
@@ -613,6 +701,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
+  logging:
+    dependency: transitive
+    description:
+      name: logging
+      sha256: c8245ada5f1717ed44271ed1c26b8ce85ca3228fd2ffdb75468ab01979309d61
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
   matcher:
     dependency: transitive
     description:
@@ -749,6 +845,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
+  pool:
+    dependency: transitive
+    description:
+      name: pool
+      sha256: "4177f68c237ea2128d1bee66ac17b2ce05ba3dbaafcbdd54c5d40a39d0b6b11c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.3"
   posix:
     dependency: transitive
     description:
@@ -757,6 +861,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.5.2"
+  process_run:
+    dependency: transitive
+    description:
+      name: process_run
+      sha256: "6ec839cdd3e6de4685318e7686cd4abb523c3d3a55af0e8d32a12ae19bc66622"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.4"
   provider:
     dependency: "direct main"
     description:
@@ -765,6 +877,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.5+1"
+  pub_semver:
+    dependency: transitive
+    description:
+      name: pub_semver
+      sha256: "261236774e8b1d69cfc6b9eabbc96c40f25e7a2d6b171f3385d4f65d5734fb24"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.1"
   record:
     dependency: "direct main"
     description:
@@ -946,6 +1066,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.5.6"
+  sqflite_common_ffi:
+    dependency: transitive
+    description:
+      name: sqflite_common_ffi
+      sha256: "9faa2fedc5385ef238ce772589f7718c24cdddd27419b609bb9c6f703ea27988"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.6"
+  sqflite_common_ffi_web:
+    dependency: transitive
+    description:
+      name: sqflite_common_ffi_web
+      sha256: "61ea702e7aba727f28be7ead00b84c19c745cd4a4934d0c41473303df11ac9ea"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.5+4"
   sqflite_darwin:
     dependency: transitive
     description:
@@ -962,6 +1098,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.0"
+  sqlite3:
+    dependency: transitive
+    description:
+      name: sqlite3
+      sha256: "3145bd74dcdb4fd6f5c6dda4d4e4490a8087d7f286a14dee5d37087290f0f8a2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.9.4"
+  sqlparser:
+    dependency: transitive
+    description:
+      name: sqlparser
+      sha256: "7b20045d1ccfb7bc1df7e8f9fee5ae58673fce6ff62cefbb0e0fd7214e90e5a0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.34.1"
   stack_trace:
     dependency: transitive
     description:

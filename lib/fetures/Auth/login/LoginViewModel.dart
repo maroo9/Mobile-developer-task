@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/RoutesManger/Routesmanger.dart';
 import '../../../core/Utilits/Uitills.dart';
-import '../../../services/odooServces/odoo.dart';
-import '../../mainlayout/mainLayout.dart';
+import '../../../core/Di/app_dependencies.dart';
+import '../../../core/network/odooClint.dart';
 
 class LoginViewModel extends ChangeNotifier {
   Future<void> Login({
@@ -14,18 +14,25 @@ class LoginViewModel extends ChangeNotifier {
     required String password,
     required String database,
   }) async {
+    final odooClient = Odooclint();
+    var loadingShown = false;
     try {
       UiUtils.Showloading(context);
+      loadingShown = true;
 
-      final success = await Odoo.signIn(
+      final success = await odooClient.signIn(
         database: database,
         username: username,
         password: password,
       );
 
-      UiUtils.hidediaolog(context);
+      if (loadingShown && context.mounted) {
+        UiUtils.hidediaolog(context);
+        loadingShown = false;
+      }
 
       if (success) {
+        AppDependencies.initialize(authenticatedClient: odooClient);
         UiUtils.showToastmassage(
           'Success',
           Colors.green,
@@ -36,16 +43,20 @@ class LoginViewModel extends ChangeNotifier {
           RoutesManager.Mainlayouts,
         );
       } else {
+        odooClient.dispose();
         UiUtils.showToastmassage(
           'Invalid username or password',
           Colors.red,
         );
       }
     } catch (e) {
-      UiUtils.hidediaolog(context);
+      odooClient.dispose();
+      if (loadingShown && context.mounted) {
+        UiUtils.hidediaolog(context);
+      }
 
       UiUtils.showToastmassage(
-        'Failed to login to Odoo',
+        'Failed to login to Odoo: $e',
         Colors.red,
       );
     }

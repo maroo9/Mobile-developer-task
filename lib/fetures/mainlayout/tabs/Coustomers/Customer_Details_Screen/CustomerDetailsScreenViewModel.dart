@@ -1,219 +1,109 @@
 
 import 'package:flutter/material.dart';
+import '../../../../../core/data/repositories/coustomer_repository.dart';
 
-import '../../../../../Models/CustomerModel.dart';
-import '../../../../../services/odooServces/odoo.dart';
+class CustomerDetailsScreenViewModel extends ChangeNotifier {
+  CustomerDetailsScreenViewModel({
+    required this.repository,
+    required this.customerId,
+  });
 
-class CustomerDetailsViewModel extends ChangeNotifier {
-  CustomerModel customer;
+  final CustomerRepository repository;
+  final int customerId;
 
-  late final TextEditingController phoneController;
+  Map<String, dynamic>? customer;
 
-  bool isSaving = false;
   bool isLoading = false;
+  bool isSaving = false;
 
   String? errorMessage;
-  String? loadErrorMessage;
-  String? loadErrorDetails;
   String? successMessage;
 
-  bool _isDisposed = false;
+  String phone = '';
+  String originalPhone = '';
 
-  CustomerDetailsViewModel({
-    required this.customer,
-  }) {
-    phoneController = TextEditingController(
-      text: customer.phone,
-    );
+  bool get hasPhoneChanged =>
+      phone.trim() != originalPhone.trim();
 
-    phoneController.addListener(_onPhoneChanged);
+  Future<void> loadCustomer() async {
+    isLoading = true;
+    errorMessage = null;
+    successMessage = null;
+    notifyListeners();
 
-    // Load fresh customer details from Odoo.
-    loadCustomer();
-  }
+    try {
+      customer = await repository.getCustomerById(
+        customerId: customerId,
+      );
 
-  // Safely notify listeners only while the ViewModel is active.
-  void _notifyListenersSafely() {
-    if (!_isDisposed) {
+      originalPhone = (customer?['phone'] ?? '').toString();
+      phone = originalPhone;
+    } catch (e) {
+      errorMessage = e.toString();
+    } finally {
+      isLoading = false;
       notifyListeners();
     }
   }
 
-  // Load the latest details for this customer.
-  Future<void> loadCustomer() async {
-    if (_isDisposed || isLoading) return;
-
-    if (customer.id <= 0) {
-      loadErrorMessage = 'customer_load_failed';
-      loadErrorDetails = 'Invalid Odoo customer ID: ${customer.id}';
-      isLoading = false;
-      _notifyListenersSafely();
-      return;
-    }
-
-    isLoading = true;
-    loadErrorMessage = null;
-    loadErrorDetails = null;
+  // Called whenever the user types in the phone field.
+  void phoneChanged(String value) {
+    phone = value;
     errorMessage = null;
     successMessage = null;
-
-    _notifyListenersSafely();
-
-    try {
-      final data = await Odoo.getCustomerById(
-        customerId: customer.id,
-      );
-
-      if (_isDisposed) return;
-
-      final loadedCustomer = CustomerModel.fromJson(data);
-
-      // Make sure Odoo returned the requested record.
-      if (loadedCustomer.id != customer.id) {
-        throw Exception('The returned customer ID does not match.');
-      }
-
-      customer = loadedCustomer;
-
-      // Refresh the phone field only after successful loading.
-      phoneController.value = TextEditingValue(
-        text: customer.phone,
-        selection: TextSelection.collapsed(
-          offset: customer.phone.length,
-        ),
-      );
-    } catch (e, stackTrace) {
-      if (_isDisposed) return;
-
-      loadErrorMessage = 'customer_load_failed';
-      loadErrorDetails = e.toString();
-
-      debugPrint('CUSTOMER LOAD FAILED: $e');
-      debugPrintStack(stackTrace: stackTrace);
-    } finally {
-      if (!_isDisposed) {
-        isLoading = false;
-        _notifyListenersSafely();
-      }
-    }
+    notifyListeners();
   }
 
-  void _onPhoneChanged() {
-    if (_isDisposed) return;
-
-    if (errorMessage != null || successMessage != null) {
-      errorMessage = null;
-      successMessage = null;
-      _notifyListenersSafely();
-    }
-  }
-
-  // Save the updated phone number to Odoo.
+  // Save the changed phone number to Odoo through the repository.
   Future<bool> savePhone() async {
-    if (_isDisposed || isSaving || isLoading) {
+    if (isSaving) return false;
+
+    if (phone.trim().isEmpty) {
+      errorMessage = 'Please enter a phone number.';
+      notifyListeners();
       return false;
     }
 
-    if (customer.id <= 0) {
-      _setError('phone_update_failed');
-      return false;
-    }
-
-    if (loadErrorMessage != null) {
-      _setError('customer_load_failed');
-      return false;
-    }
-
-    final phone = phoneController.text.trim();
-
-    debugPrint('========== CUSTOMER PHONE UPDATE ==========');
-    debugPrint('Customer ID: ${customer.id}');
-
-    // Validate the phone number.
-    if (phone.isEmpty) {
-      _setError('phone_required');
-      return false;
-    }
-
-    if (phone == customer.phone.trim()) {
-      _setError('phone_unchanged');
+    if (!hasPhoneChanged) {
+      errorMessage = 'The phone number has not changed.';
+      notifyListeners();
       return false;
     }
 
     isSaving = true;
     errorMessage = null;
     successMessage = null;
-
-    _notifyListenersSafely();
+    notifyListeners();
 
     try {
-      debugPrint('Sending phone update request to Odoo...');
+      final newPhone = phone.trim();
 
-      final success = await Odoo.updateCustomerPhone(
-        customerId: customer.id,
-        phone: phone,
+      final saved = await repository.updateCustomerPhone(
+        customerId: customerId,
+        phone: newPhone,
       );
 
-      if (_isDisposed) return false;
-
-      debugPrint('Odoo update result: $success');
-
-      if (!success) {
-        _setError(
-          'phone_update_not_confirmed',
-          notify: false,
-        );
+      if (!saved) {
+        errorMessage = 'Could not save the phone number.';
         return false;
       }
 
-      customer.phone = phone;
-      successMessage = 'phone_updated';
-      errorMessage = null;
+      originalPhone = newPhone;
+      phone = newPhone;
 
-      debugPrint('Customer phone updated successfully.');
+      customer = {
+        ...?customer,
+        'phone': newPhone,
+      };
 
+      successMessage = 'Phone number updated successfully.';
       return true;
-    } catch (e, stackTrace) {
-      if (!_isDisposed) {
-        errorMessage = 'phone_update_failed';
-        successMessage = null;
-      }
-
-      debugPrint('CUSTOMER UPDATE FAILED: $e');
-      debugPrintStack(stackTrace: stackTrace);
-
+    } catch (e) {
+      errorMessage = e.toString();
       return false;
     } finally {
-      if (!_isDisposed) {
-        isSaving = false;
-        _notifyListenersSafely();
-      }
-
-      debugPrint('===========================================');
+      isSaving = false;
+      notifyListeners();
     }
-  }
-
-  void _setError(
-      String message, {
-        bool notify = true,
-      }) {
-    if (_isDisposed) return;
-
-    errorMessage = message;
-    successMessage = null;
-
-    if (notify) {
-      _notifyListenersSafely();
-    }
-  }
-
-  @override
-  void dispose() {
-    _isDisposed = true;
-
-    phoneController.removeListener(_onPhoneChanged);
-    phoneController.dispose();
-
-    super.dispose();
   }
 }

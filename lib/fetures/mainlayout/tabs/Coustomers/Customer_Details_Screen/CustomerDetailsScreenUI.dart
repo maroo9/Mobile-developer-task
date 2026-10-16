@@ -1,9 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
 import '../../../../../Models/CustomerModel.dart';
 import '../../../../../core/Coloursmanger/ColorsManger.dart';
+import '../../../../../core/Di/app_dependencies.dart';
 import '../../../../../l10n/app_localizations.dart';
 import 'package:mobile_developer_task/providers/localeProvider.dart';
 import 'CustomerDetailsScreenViewModel.dart';
@@ -25,54 +26,82 @@ class CustomerDetailsScreen extends StatefulWidget {
       _CustomerDetailsScreenState();
 }
 
-class _CustomerDetailsScreenState
-    extends State<CustomerDetailsScreen> {
-  late final CustomerDetailsViewModel viewModel;
+class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
+  late final CustomerDetailsScreenViewModel viewModel;
+  late final TextEditingController _phoneController;
 
   @override
   void initState() {
     super.initState();
 
-    viewModel = CustomerDetailsViewModel(
-      customer: widget.customer,
+    _phoneController = TextEditingController(
+      text: widget.customer.phone,
+    );
+
+    viewModel = CustomerDetailsScreenViewModel(
+      repository: AppDependencies.customerRepository,
+      customerId: widget.customer.id,
     );
 
     viewModel.addListener(_refreshUI);
+    viewModel.loadCustomer();
   }
 
   void _refreshUI() {
-    if (mounted) {
-      setState(() {});
+    if (!mounted) return;
+
+    // Keep the text field in sync after the customer is loaded or saved.
+    // Do not reset the cursor when the user is typing the same value.
+    if (_phoneController.text != viewModel.phone) {
+      _phoneController.value = TextEditingValue(
+        text: viewModel.phone,
+        selection: TextSelection.collapsed(
+          offset: viewModel.phone.length,
+        ),
+      );
     }
+
+    setState(() {});
   }
 
   @override
   void dispose() {
     viewModel.removeListener(_refreshUI);
     viewModel.dispose();
+    _phoneController.dispose();
     super.dispose();
+  }
+
+  String _text(dynamic value) => (value ?? '').toString().trim();
+
+  String _errorText(AppLocalizations local, String? error) {
+    switch (error) {
+      case 'phone_required':
+        return local.phone_required;
+      case 'phone_unchanged':
+        return local.phone_unchanged;
+      case 'phone_update_not_confirmed':
+        return local.phone_update_not_confirmed;
+      case 'phone_update_failed':
+        return local.phone_update_failed;
+      default:
+      // The ViewModel may provide a server exception string.
+        return error?.isNotEmpty == true
+            ? error!
+            : local.phone_update_failed;
+    }
   }
 
   Future<void> _savePhone() async {
     FocusScope.of(context).unfocus();
 
     final success = await viewModel.savePhone();
-
     if (!mounted) return;
 
     final local = AppLocalizations.of(context)!;
-    final messageKey = success
-        ? 'phone_updated'
-        : viewModel.errorMessage ?? 'phone_update_failed';
-
-    final message = switch (messageKey) {
-      'phone_required' => local.phone_required,
-      'phone_unchanged' => local.phone_unchanged,
-      'phone_update_not_confirmed' =>
-      local.phone_update_not_confirmed,
-      'phone_updated' => local.phone_updated,
-      _ => local.phone_update_failed,
-    };
+    final message = success
+        ? local.phone_updated
+        : _errorText(local, viewModel.errorMessage);
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -86,20 +115,23 @@ class _CustomerDetailsScreenState
       );
   }
 
+  Future<void> _loadCustomer() async {
+    await viewModel.loadCustomer();
+  }
+
   @override
   Widget build(BuildContext context) {
     final localeProvider = context.watch<LocaleProvider>();
-
     final local = AppLocalizations.of(context)!;
     final customer = viewModel.customer;
 
-    final customerName = customer.name.trim();
-    final phone = viewModel.phoneController.text.trim();
-    final email = customer.email.trim();
+    final customerName = _text(customer?['name']);
+    final phone = viewModel.phone.trim();
+    final email = _text(customer?['email']);
 
-    final addressParts = [
-      customer.address.trim(),
-      customer.city.trim(),
+    final addressParts = <String>[
+      _text(customer?['street']),
+      _text(customer?['city']),
     ].where((part) => part.isNotEmpty).toSet().toList();
 
     final address = addressParts.join(', ');
@@ -113,31 +145,22 @@ class _CustomerDetailsScreenState
         elevation: 0,
         title: Text(
           local.customer_details,
-          style: GoogleFonts.dmSerifDisplay(
-            fontSize: 22,
-          ),
+          style: GoogleFonts.dmSerifDisplay(fontSize: 22),
         ),
       ),
       body: SafeArea(
-        child: viewModel.isLoading
-            ? const Center(
-          child: CircularProgressIndicator(),
-        )
-            : viewModel.loadErrorMessage != null
+        child: viewModel.isLoading && customer == null
+            ? const Center(child: CircularProgressIndicator())
+            : viewModel.errorMessage != null && customer == null
             ? _buildLoadError(local)
             : GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: ListView(
             keyboardDismissBehavior:
             ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              32,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
-              // PROFILE HEADER
+              // Profile header
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -145,8 +168,7 @@ class _CustomerDetailsScreenState
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       local.customer_profile,
@@ -155,10 +177,7 @@ class _CustomerDetailsScreenState
                         color: const Color(0xFFDCE6F1),
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // AVATAR AND CUSTOMER NAME
                     Row(
                       children: [
                         Container(
@@ -177,8 +196,7 @@ class _CustomerDetailsScreenState
                             backgroundColor: Colors.white,
                             child: Text(
                               customerName.isNotEmpty
-                                  ? customerName[0]
-                                  .toUpperCase()
+                                  ? customerName[0].toUpperCase()
                                   : '?',
                               style: const TextStyle(
                                 color: _profileBlue,
@@ -188,9 +206,7 @@ class _CustomerDetailsScreenState
                             ),
                           ),
                         ),
-
                         const SizedBox(width: 14),
-
                         Expanded(
                           child: Text(
                             customerName.isNotEmpty
@@ -198,53 +214,45 @@ class _CustomerDetailsScreenState
                                 : local.unnamed_customer,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style:
-                            GoogleFonts.dmSerifDisplay(
+                            style: GoogleFonts.dmSerifDisplay(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
                         ),
-                        SizedBox(width: 20,),
+                        const SizedBox(width: 12),
                         InkWell(
                           onTap: () async {
                             await localeProvider.toggleLocale();
                           },
+                          borderRadius: BorderRadius.circular(8),
                           child: Card(
                             child: Padding(
                               padding: const EdgeInsets.all(8),
                               child: Text(
                                 localeProvider.isArabic ? 'EN' : 'AR',
                                 style: GoogleFonts.dmSerifDisplay(
-                                  fontWeight: FontWeight.w400,
                                   fontSize: 15,
                                   color: Colorsmanger.darkblue,
                                 ),
-
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 22),
-
                     _buildHeaderInfo(
                       icon: Icons.phone_outlined,
                       value: phone,
                     ),
-
                     const SizedBox(height: 12),
-
                     _buildHeaderInfo(
                       icon: Icons.email_outlined,
                       value: email,
                     ),
-
                     const SizedBox(height: 12),
-
                     _buildHeaderInfo(
                       icon: Icons.location_on_outlined,
                       value: address,
@@ -253,10 +261,9 @@ class _CustomerDetailsScreenState
                   ],
                 ),
               ),
-
               const SizedBox(height: 18),
 
-              // CUSTOMER INFORMATION CARD
+              // Customer information card
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -271,8 +278,7 @@ class _CustomerDetailsScreenState
                   ],
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       local.customer_information,
@@ -282,40 +288,30 @@ class _CustomerDetailsScreenState
                         color: _cardBlue,
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // NAME
                     _buildFieldLabel(
                       icon: Icons.person_outline,
                       label: local.customer_name,
                     ),
-
                     const SizedBox(height: 8),
-
                     _buildReadOnlyField(
                       value: customerName,
                       icon: Icons.person_outline,
                       hint: local.no_customer_name,
                     ),
-
                     const SizedBox(height: 18),
-
-                    // EDITABLE PHONE
                     _buildFieldLabel(
                       icon: Icons.phone_outlined,
                       label: local.phone,
                     ),
-
                     const SizedBox(height: 8),
-
                     TextField(
-                      controller:
-                      viewModel.phoneController,
+                      controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      textInputAction:
-                      TextInputAction.done,
+                      textInputAction: TextInputAction.done,
+                      textDirection: TextDirection.ltr,
                       enabled: !viewModel.isSaving,
+                      onChanged: viewModel.phoneChanged,
                       onSubmitted: (_) {
                         if (!viewModel.isSaving &&
                             !viewModel.isLoading) {
@@ -327,47 +323,33 @@ class _CustomerDetailsScreenState
                         icon: Icons.phone_outlined,
                       ),
                     ),
-
                     const SizedBox(height: 18),
-
-                    // EMAIL
                     _buildFieldLabel(
                       icon: Icons.email_outlined,
                       label: local.email,
                     ),
-
                     const SizedBox(height: 8),
-
                     _buildReadOnlyField(
                       value: email,
                       icon: Icons.email_outlined,
                       hint: local.no_email,
                     ),
-
                     const SizedBox(height: 18),
-
-                    // ADDRESS
                     _buildFieldLabel(
                       icon: Icons.location_on_outlined,
                       label: local.address,
                     ),
-
                     const SizedBox(height: 8),
-
                     _buildReadOnlyField(
                       value: address,
                       icon: Icons.location_on_outlined,
                       hint: local.no_address,
                     ),
-
                     const SizedBox(height: 24),
-
-                    // SAVE BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed:
-                        viewModel.isSaving ||
+                        onPressed: viewModel.isSaving ||
                             viewModel.isLoading
                             ? null
                             : _savePhone,
@@ -375,40 +357,32 @@ class _CustomerDetailsScreenState
                             ? const SizedBox(
                           width: 19,
                           height: 19,
-                          child:
-                          CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.white,
                           ),
                         )
-                            : const Icon(
-                          Icons.save_outlined,
-                        ),
+                            : const Icon(Icons.save_outlined),
                         label: Text(
                           viewModel.isSaving
                               ? local.saving
                               : local.save_phone,
                         ),
-                        style:
-                        ElevatedButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
                           backgroundColor: _cardBlue,
                           foregroundColor: Colors.white,
                           disabledBackgroundColor:
                           const Color(0xFF7B8DA5),
-                          padding:
-                          const EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             vertical: 15,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(13),
+                            borderRadius: BorderRadius.circular(13),
                           ),
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
                     Center(
                       child: Text(
                         local.only_phone_editable,
@@ -443,13 +417,12 @@ class _CustomerDetailsScreenState
             ),
             const SizedBox(height: 12),
             Text(
-              local.phone_update_failed,
+              local.customer_update_failed,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              viewModel.loadErrorDetails ??
-                  'Unable to load customer details.',
+              viewModel.errorMessage ?? 'Unable to load customer details.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey.shade700,
@@ -458,11 +431,9 @@ class _CustomerDetailsScreenState
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: viewModel.isLoading
-                  ? null
-                  : viewModel.loadCustomer,
+              onPressed: viewModel.isLoading ? null : _loadCustomer,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(local.retry),
             ),
           ],
         ),
@@ -484,11 +455,7 @@ class _CustomerDetailsScreenState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 21,
-        ),
+        Icon(icon, color: Colors.white, size: 21),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
@@ -510,11 +477,7 @@ class _CustomerDetailsScreenState
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: _cardBlue,
-          size: 21,
-        ),
+        Icon(icon, color: _cardBlue, size: 21),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -539,25 +502,16 @@ class _CustomerDetailsScreenState
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFFF5F6FA),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE0E5ED),
-        ),
+        border: Border.all(color: const Color(0xFFE0E5ED)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: _profileBlue,
-            size: 20,
-          ),
+          Icon(icon, color: _profileBlue, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -565,9 +519,7 @@ class _CustomerDetailsScreenState
               softWrap: true,
               style: TextStyle(
                 fontSize: 14,
-                color: hasValue
-                    ? Colors.black87
-                    : Colors.grey.shade500,
+                color: hasValue ? Colors.black87 : Colors.grey.shade500,
               ),
             ),
           ),
@@ -582,10 +534,7 @@ class _CustomerDetailsScreenState
   }) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(
-        icon,
-        color: _profileBlue,
-      ),
+      prefixIcon: Icon(icon, color: _profileBlue),
       filled: true,
       fillColor: const Color(0xFFF5F6FA),
       contentPadding: const EdgeInsets.symmetric(
@@ -598,22 +547,15 @@ class _CustomerDetailsScreenState
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Color(0xFFE0E5ED),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFE0E5ED)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: _cardBlue,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: _cardBlue, width: 1.5),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Color(0xFFE0E5ED),
-        ),
+        borderSide: const BorderSide(color: Color(0xFFE0E5ED)),
       ),
     );
   }

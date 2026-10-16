@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile_developer_task/core/Di/app_dependencies.dart';
 
 import '../../../../Models/ProductsModel.dart';
 import '../../../../Models/SalesModel.dart';
+import '../../../../core/data/remote/auth_remote_data.dart';
+import '../../../../core/data/remote/sales_remote_data.dart';
+import '../../../../core/data/repositories/sales_repository.dart';
+import '../../../../core/network/odooClint.dart';
 import 'SalesViewModel.dart';
 
 class Sales extends StatefulWidget {
@@ -18,9 +23,13 @@ class _SalesState extends State<Sales> {
   @override
   void initState() {
     super.initState();
-    viewModel = SalesViewModel()..addListener(_refresh);
+    viewModel = SalesViewModel(
+      AppDependencies.salesRepository
+    );
+    viewModel.addListener(_refresh);
     viewModel.loadOrders();
   }
+
 
   void _refresh() {
     if (mounted) setState(() {});
