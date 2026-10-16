@@ -8,8 +8,7 @@ import 'package:provider/provider.dart';
 import 'core/RoutesManger/Routesmanger.dart';
 import 'l10n/app_localizations.dart';
 void main()async {
-  WidgetsFlutterBinding.ensureInitialized(); // VERY IMPOR
-  //await Firebase.initializeApp();
+  WidgetsFlutterBinding.ensureInitialized();
   final localeProvider = await LocaleProvider.create();
   runApp(MultiProvider(
       providers: [
@@ -25,7 +24,6 @@ void main()async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     final localeProvider = context.watch<LocaleProvider>();
@@ -41,7 +39,6 @@ class MyApp extends StatelessWidget {
         supportedLocales: AppLocalizations.supportedLocales,
         routes: RoutesManager.routes,
         initialRoute:RoutesManager.splashscreen,
-        // FirebaseAuth.instance.currentUser==null ?RoutesManager.Logins:RoutesManager.Mainlayout,
       ),
     );
 
